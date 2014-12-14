@@ -7,14 +7,14 @@ output:
 
 
 ## Loading and preprocessing the data
-```{r}
+```{r reading-data}
 activity <- read.csv("activity/activity.csv")
 summary(activity)
 ```
 
 
 ## What is mean total number of steps taken per day?
-```{r}
+```{r histogram-total-steps}
 totalSteps <- with(activity, aggregate(steps, list(date = date), sum))
 hist(totalSteps$x, xlab = "Total number of steps taken each day",
      main = "Histogram of total number of steps")
@@ -31,7 +31,7 @@ median(totalSteps$x, na.rm = T)
 
 
 ## What is the average daily activity pattern?
-```{r}
+```{r average-daily-activity}
 avgStepsPerInterval <- with(activity,
                             aggregate(steps, list(interval = interval),
                                       function(x) mean(x, na.rm = T)))
@@ -49,13 +49,13 @@ avgStepsPerInterval$interval[maxIndex]
 
 
 ## Imputing missing values
-Number of rows containing missing values is
+The number of rows containing missing values is
 ```{r}
 sum(!complete.cases(activity))
 ```
 
 The missing values are replaced by the mean number of steps for the interval
-across all days.
+across all days (or 0).
 ```{r}
 cleanedActivity <- activity
 cleanedActivity$steps <- as.numeric(apply(activity, 1, function(row) {
@@ -82,8 +82,9 @@ write.csv(cleanedActivity, file = "activity/cleaned_activity.csv",
           row.names = F)
 ```
 
-
-```{r}
+Cleaning the data changed a little the histogram of the total number of steps,
+because now there are more *average* values.
+```{r histogram-cleaned-total-steps}
 totalStepsCleaned <- with(cleanedActivity,
                           aggregate(steps, list(date = date), sum))
 hist(totalStepsCleaned$x, xlab = "Total number of steps taken each day",
@@ -131,7 +132,7 @@ cleanedActivity$stepsAvg <- apply(cleanedActivity, 1, function(row) {
 })
 ```
 
-```{r}
+```{r avg-steps-interval-weekday}
 library(lattice)
 plotData <- unique(cleanedActivity[,c(3,4,5)])
 xyplot(stepsAvg ~ interval | day, data = plotData, type = "l",

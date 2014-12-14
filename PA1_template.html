@@ -98,10 +98,10 @@ avgStepsPerInterval$interval[maxIndex]</code></pre>
 </div>
 <div id="imputing-missing-values" class="section level2">
 <h2>Imputing missing values</h2>
-<p>Number of rows containing missing values is</p>
+<p>The number of rows containing missing values is</p>
 <pre class="r"><code>sum(!complete.cases(activity))</code></pre>
 <pre><code>## [1] 2304</code></pre>
-<p>The missing values are replaced by the mean number of steps for the interval across all days.</p>
+<p>The missing values are replaced by the mean number of steps for the interval across all days (or 0).</p>
 <pre class="r"><code>cleanedActivity &lt;- activity
 cleanedActivity$steps &lt;- as.numeric(apply(activity, 1, function(row) {
         x &lt;- row['steps']
@@ -130,6 +130,7 @@ summary(cleanedActivity)</code></pre>
 <p>Let’s save the cleaned data set.</p>
 <pre class="r"><code>write.csv(cleanedActivity, file = &quot;activity/cleaned_activity.csv&quot;,
           row.names = F)</code></pre>
+<p>Cleaning the data changed a little the histogram of the total number of steps, because now there are more <em>average</em> values.</p>
 <pre class="r"><code>totalStepsCleaned &lt;- with(cleanedActivity,
                           aggregate(steps, list(date = date), sum))
 hist(totalStepsCleaned$x, xlab = &quot;Total number of steps taken each day&quot;,
