@@ -7,19 +7,134 @@ output:
 
 
 ## Loading and preprocessing the data
-
+```{r}
+activity <- read.csv("activity/activity.csv")
+summary(activity)
+```
 
 
 ## What is mean total number of steps taken per day?
+```{r}
+totalSteps <- with(activity, aggregate(steps, list(date = date), sum))
+hist(totalSteps$x, xlab = "Total number of steps taken each day",
+     main = "Histogram of total number of steps")
+```
 
+The mean total number of steps is
+```{r}
+mean(totalSteps$x, na.rm = T)
+```
+and the median number of steps is
+```{r}
+median(totalSteps$x, na.rm = T)
+```
 
 
 ## What is the average daily activity pattern?
+```{r}
+avgStepsPerInterval <- with(activity,
+                            aggregate(steps, list(interval = interval),
+                                      function(x) mean(x, na.rm = T)))
+with(avgStepsPerInterval, plot(interval, x, type = "l", ylab = "", xlab = ""))
+title(main = "Average number of steps taken, averaged across all days",
+      ylab = "Average number of steps taken",
+      xlab = "Interval")
+```
 
+The interval that contains maximum number of steps is
+```{r}
+maxIndex <- which.max(avgStepsPerInterval$x)
+avgStepsPerInterval$interval[maxIndex]
+```
 
 
 ## Imputing missing values
+Number of rows containing missing values is
+```{r}
+sum(!complete.cases(activity))
+```
 
+The missing values are replaced by the mean number of steps for the interval
+across all days.
+```{r}
+cleanedActivity <- activity
+cleanedActivity$steps <- as.numeric(apply(activity, 1, function(row) {
+        x <- row['steps']
+        interval <- row['interval']
+        if(is.na(x)) {
+                index <- which(
+                        avgStepsPerInterval$interval == as.numeric(interval))
+                if(length(index) > 0) {
+                        x <- avgStepsPerInterval$x[index[1]]
+                } else {
+                        x <- 0
+                }
+        }
+        x
+}))
+
+summary(cleanedActivity)
+```
+
+Let's save the cleaned data set.
+```{r}
+write.csv(cleanedActivity, file = "activity/cleaned_activity.csv",
+          row.names = F)
+```
+
+
+```{r}
+totalStepsCleaned <- with(cleanedActivity,
+                          aggregate(steps, list(date = date), sum))
+hist(totalStepsCleaned$x, xlab = "Total number of steps taken each day",
+     main = "Histogram of total number of steps")
+```
+
+The mean total number of steps in the cleaned data set is
+```{r}
+mean(totalStepsCleaned$x)
+```
+
+and the median total number of steps in the cleaned data set is
+```{r}
+median(totalStepsCleaned$x)
+```
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+Determine which day is a weekday or a weekend day.
+```{r}
+cleanedActivity$day <- as.factor(apply(cleanedActivity, 1, function(row) {
+        date <- as.POSIXct(as.character(row['date']), format = "%Y-%m-%d")
+        weekdayNr <- as.integer(strftime(date, "%u"))
+        weekday <- "weekday"
+        if(weekdayNr == 6 | weekdayNr == 7) {
+                weekday <- "weekend"
+        }
+        weekday
+}))
+```
+
+Compute mean of steps taken per each interval and each day type.
+```{r}
+avgStepsPerIntervalAndWeekday <-
+        with(cleanedActivity, aggregate(steps, list(interval = interval,
+                                                    day = day),
+                                        function(x) mean(x, na.rm = T)))
+
+cleanedActivity$stepsAvg <- apply(cleanedActivity, 1, function(row) {
+        interval <- as.integer(row['interval'])
+        day <- row['day']
+        index <- which(avgStepsPerIntervalAndWeekday$interval == interval &
+                               avgStepsPerIntervalAndWeekday$day == day)
+        avgStepsPerIntervalAndWeekday$x[index]
+})
+```
+
+```{r}
+library(lattice)
+plotData <- unique(cleanedActivity[,c(3,4,5)])
+xyplot(stepsAvg ~ interval | day, data = plotData, type = "l",
+       layout = c(1, 2), xlab = "Interval", ylab = "Number of steps",
+       main = "Average number of steps taken")
+```
